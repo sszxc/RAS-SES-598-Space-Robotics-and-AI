@@ -223,7 +223,7 @@ Xuechao Zhang, Jan. 27th
 - Screenshot of final performance:
    ![screenshot_final_perf](resource/screenshot_final_perf.png)
 
-- Discussion for tuning:
+## Discussion for tuning:
 1. First, set up appropriate tools. In this assignment, rqt_reconfigure and rqt_plot are excellent tools that allow real-time parameter adjustment and performance visualization.
    👇 visualization for default parameters
    ![screenshot_default_para](resource/screenshot_default_para.png)
@@ -234,6 +234,6 @@ Xuechao Zhang, Jan. 27th
    ![screenshot_kd_tuning](resource/screenshot_different_kd.png)
 
 
-- Challenges and solutions:
+## Challenges and solutions:
 1. I have never use ros2 before, so need to spend time to become familiar with the development and tools of ros2, especially the differences from ros1.
 2. Failed to find the correct way to add a custom message type (although implemented the basic structure for message publishing), maybe something wrong with the Python import path and CMake dependencies.
