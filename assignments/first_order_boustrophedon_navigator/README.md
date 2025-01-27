@@ -206,3 +206,39 @@ This will demonstrate understanding of:
 - ROS2 message definitions
 - Custom interface creation
 - Message publishing patterns 
+
+
+# Assignment Submission
+
+Xuechao Zhang, Jan. 27th
+
+- Final Parameters:
+  - Kp_linear: 10.0
+  - Kd_linear: 0.04
+  - Kp_angular: 9.0
+  - Kd_angular: 0.01
+  - spacing: 0.5
+- Final Performance:
+  - Cross-track error: -0.000, Avg: 0.084, Min: 0.000, Max: 0.181
+- Screenshot of final performance:
+   ![screenshot_final_perf](resource/screenshot_final_perf.png)
+
+- Discussion for tuning:
+- 首先配置好合适的工具,在本次作业中,rqt_reconfigure和rqt_plot是很好的工具,可以实时查看和调整参数,并可视化性能.
+- 然后通过观察分析,大胆调试非常小和非常大的参数值,大致理解每个参数的作用
+- 先调整kp,然后是kd,从小参数值开始,二分法调整
+- 在调整kd的过程中,可以明显看到曲线过冲,因此需要调整kd,使得曲线更加平滑
+  
+- Discussion for tuning:
+1. First, set up appropriate tools. In this assignment, rqt_reconfigure and rqt_plot are excellent tools that allow real-time parameter adjustment and performance visualization.
+   👇 visualization for default parameters
+   ![screenshot_default_para](resource/screenshot_default_para.png)
+2. Then, through observation and analysis, boldly test both very small and very large extreme parameter values to understand the function of each parameter.
+3. Start by adjusting Kp, then Kd, beginning with small parameter values and using a binary search approach for adjustment.
+4. During the Kd adjustment process, you can clearly observe curve overshooting, therefore Kd needs to be adjusted to make the curve smoother.
+   👇 visualization for different Kd
+   ![screenshot_kd_tuning](resource/screenshot_different_kd.png)
+
+
+- Challenges and solutions:
+1. I have never use ros2 before, so need to spend time to become familiar with the development and tools of ros2, especially the differences from ros1.
