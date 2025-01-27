@@ -224,12 +224,6 @@ Xuechao Zhang, Jan. 27th
    ![screenshot_final_perf](resource/screenshot_final_perf.png)
 
 - Discussion for tuning:
-- 首先配置好合适的工具,在本次作业中,rqt_reconfigure和rqt_plot是很好的工具,可以实时查看和调整参数,并可视化性能.
-- 然后通过观察分析,大胆调试非常小和非常大的参数值,大致理解每个参数的作用
-- 先调整kp,然后是kd,从小参数值开始,二分法调整
-- 在调整kd的过程中,可以明显看到曲线过冲,因此需要调整kd,使得曲线更加平滑
-  
-- Discussion for tuning:
 1. First, set up appropriate tools. In this assignment, rqt_reconfigure and rqt_plot are excellent tools that allow real-time parameter adjustment and performance visualization.
    👇 visualization for default parameters
    ![screenshot_default_para](resource/screenshot_default_para.png)
@@ -242,3 +236,4 @@ Xuechao Zhang, Jan. 27th
 
 - Challenges and solutions:
 1. I have never use ros2 before, so need to spend time to become familiar with the development and tools of ros2, especially the differences from ros1.
+2. Failed to find the correct way to add a custom message type (although implemented the basic structure for message publishing), maybe something wrong with the Python import path and CMake dependencies.

@@ -9,6 +9,7 @@ import math
 from collections import deque
 from std_msgs.msg import Float64
 from rcl_interfaces.msg import SetParametersResult
+# from first_order_boustrophedon_navigator.msg import NavigationStatus  # import custom message
 
 
 class BoustrophedonController(Node):
@@ -66,6 +67,13 @@ class BoustrophedonController(Node):
         
         self.get_logger().info('Lawnmower controller started')
         self.get_logger().info(f'Following waypoints: {self.waypoints}')
+
+        # # create status publisher
+        # self.status_publisher = self.create_publisher(
+        #     NavigationStatus,
+        #     'navigation_status',
+        #     10
+        # )
 
     def generate_waypoints(self):
         waypoints = []
@@ -161,6 +169,7 @@ class BoustrophedonController(Node):
     def control_loop(self):
         if self.current_waypoint >= len(self.waypoints):
             # Pattern complete
+            self.publish_status(0.0, 0.0, 0.0, 100.0)
             self.get_logger().info('Lawnmower pattern complete')
             if self.cross_track_errors:
                 final_avg_error = sum(self.cross_track_errors) / len(self.cross_track_errors)
@@ -209,6 +218,23 @@ class BoustrophedonController(Node):
         if distance < 0.1:  # Within 0.1 units of target
             self.current_waypoint += 1
             self.get_logger().info(f'Reached waypoint {self.current_waypoint}')
+
+    #     completion = (self.current_waypoint / len(self.waypoints)) * 100.0
+    #     self.publish_status(
+    #         vel_msg.linear.x,
+    #         vel_msg.angular.z,
+    #         distance,
+    #         completion
+    #     )
+
+    # def publish_status(self, linear_vel, angular_vel, distance, completion):
+    #     """发布导航状态信息"""
+    #     msg = NavigationStatus()
+    #     msg.linear_velocity = linear_vel
+    #     msg.angular_velocity = angular_vel
+    #     msg.distance_to_waypoint = distance
+    #     msg.completion_percentage = completion
+    #     self.status_publisher.publish(msg)
 
     def parameter_callback(self, params):
         """Callback for parameter updates"""

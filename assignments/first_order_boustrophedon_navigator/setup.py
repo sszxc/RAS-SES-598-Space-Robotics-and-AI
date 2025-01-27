@@ -16,6 +16,7 @@ setup(
         (os.path.join('lib', package_name), glob('scripts/*')),
         (os.path.join('share', package_name, 'config'), glob('config/*')),
         (os.path.join('share', package_name, 'launch'), glob('launch/*.py')),
+        (os.path.join('share', package_name, 'msg'), glob('msg/*.msg')),
     ],
     install_requires=['setuptools'],
     zip_safe=True,
