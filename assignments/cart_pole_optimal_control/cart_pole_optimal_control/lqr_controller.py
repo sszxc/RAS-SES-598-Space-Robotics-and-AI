@@ -75,6 +75,8 @@ class CartPoleLQRController(Node):
         self.pole_angle_pub = self.create_publisher(Float64, '/plot/pole_angle', 10)
         self.pole_vel_pub = self.create_publisher(Float64, '/plot/pole_velocity', 10)
         self.control_force_pub = self.create_publisher(Float64, '/plot/control_force', 10)
+        self.start_time = self.get_clock().now().nanoseconds / 1e9
+        self.stop_control_flag = False
 
         self.get_logger().info('Cart-Pole LQR Controller initialized')
     
@@ -110,9 +112,20 @@ class CartPoleLQRController(Node):
     
     def control_loop(self):
         """Compute and apply LQR control."""
+        if self.stop_control_flag:
+            return
         try:
             if not self.state_initialized:
                 self.get_logger().warn('State not initialized yet')
+                return
+
+            # 检查小车位置是否超出限制
+            cart_position = float(self.x[0][0])
+            position_limit = 2.5
+            if abs(cart_position) > position_limit:
+                self.get_logger().warn(f'小车位置 ({cart_position:.2f}m) 超出限制 (±{position_limit}m)')
+                self.get_logger().warn(f'持续时间{self.get_clock().now().nanoseconds / 1e9 - self.start_time}s')
+                self.stop_control_flag = True
                 return
 
             # Compute control input u = -Kx
