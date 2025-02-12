@@ -279,25 +279,25 @@ The Q matrix represents the final optimization objective, so adjusting the weigh
 
 ### Q0
 
-Q0 corresponds to cart position. Increasing Q0 keeps the cart closer to the origin, while decreasing it allows the cart to more easily reach the boundaries, potentially causing the pole to fall (as shown in the figure).
+Q0 corresponds to cart position. Increasing Q0 keeps the cart closer to the origin, while decreasing it allows the cart to more easily reach the boundaries, potentially causing the pole to fall (as shown in the figure, Q0 = 0.01).
 
 <img src="resource/Q0-0.01.png" width="400"/>
 
 ### Q1
 
-Q1 corresponds to cart velocity. Increasing Q1 makes the cart tend to remain stationary (as shown in the figure), while decreasing it leads to more active cart movement.
+Q1 corresponds to cart velocity. Increasing Q1 makes the cart tend to remain stationary (as shown in the figure, Q1 = 100), while decreasing it leads to more active cart movement.
 
 <img src="resource/Q1-100.png" width="400"/>
 
 ### Q2
 
-Q2 corresponds to pole angle. Increasing Q2 maintains the pole angle more stable at small angles (as shown in the figure), while decreasing it may cause the pole to fall.
+Q2 corresponds to pole angle. Increasing Q2 maintains the pole angle more stable at small angles (as shown in the figure, Q2 = 500), while decreasing it may cause the pole to fall.
 
 <img src="resource/Q2-500.png" width="400"/>
 
 ### Q3
 
-Q3 corresponds to pole angular velocity. Decreasing Q3 makes the pole more likely to fall (as shown in the figure).
+Q3 corresponds to pole angular velocity. Decreasing Q3 makes the pole more likely to fall (as shown in the figure, Q3 = 0.1).
 
 <img src="resource/Q3-0.1.png" width="400"/>
 
