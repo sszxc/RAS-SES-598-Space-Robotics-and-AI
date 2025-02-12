@@ -265,3 +265,60 @@ Students should analyze:
 ## License
 This work is licensed under a [Creative Commons Attribution 4.0 International License](http://creativecommons.org/licenses/by/4.0/).
 [![Creative Commons License](https://i.creativecommons.org/l/by/4.0/88x31.png)](http://creativecommons.org/licenses/by/4.0/) 
+
+
+# Assignment Submission
+
+Xuechao Zhang, Feb. 12th
+
+## Parameter Analysis and Tuning Process
+
+Analysis of the Q and R matrices for the LQR controller:
+
+The Q matrix represents the final optimization objective, so adjusting the weight of each component affects the system's sensitivity to the corresponding values. Below is an analysis of how each component of the Q matrix affects system performance.
+
+### Q0
+
+Q0 corresponds to cart position. Increasing Q0 keeps the cart closer to the origin, while decreasing it allows the cart to more easily reach the boundaries, potentially causing the pole to fall (as shown in the figure).
+
+<img src="resource/Q0-0.01.png" width="400"/>
+
+### Q1
+
+Q1 corresponds to cart velocity. Increasing Q1 makes the cart tend to remain stationary (as shown in the figure), while decreasing it leads to more active cart movement.
+
+<img src="resource/Q1-100.png" width="400"/>
+
+### Q2
+
+Q2 corresponds to pole angle. Increasing Q2 maintains the pole angle more stable at small angles (as shown in the figure), while decreasing it may cause the pole to fall.
+
+<img src="resource/Q2-500.png" width="400"/>
+
+### Q3
+
+Q3 corresponds to pole angular velocity. Decreasing Q3 makes the pole more likely to fall (as shown in the figure).
+
+<img src="resource/Q3-0.1.png" width="400"/>
+
+### R
+
+The R matrix represents the weight of control input. Increasing R makes control input more costly, resulting in smaller control inputs that may lead to pole falling; decreasing R leads to more aggressive control inputs. The figures below show cases where R is 0.001 and 10 respectively.
+
+<img src="resource/R-0.001.png" width="400"/>
+<img src="resource/R-10.png" width="400"/>
+
+
+### Final Parameter
+
+It's challenging to determine a final Q and R matrix for this task, as different task objectives have different requirements for performance metrics. However, it's clear that LQR is a very simple and effective controller for this task.
+
+## Challenges and solutions
+1. Default install command is not working, the Gazebo version is not compatible with the current code. The situation is that I cannot get anything in '/world/empty/model/cart_pole/joint_state' topic from the Gazebo /bridge. Finally I found that I have to change the Gazebo version to Garden to make it work.
+
+2. The code framework is a bit complex, I need to spend some time to understand the structure. Thanks to the `rqt_graph` tool, I can have a clear view of the node structure and topic communication.
+   ![rqt_graph](resource/ros_graph.jpg)
+
+3. The control performance is influenced by the random seed of the disturbance generator. The simulation has to be run multiple times for analysis.
+
+4. Currently, the control force is not limited by the physical limit of the cart-pole system(including the amplitude and the frequency). Simply increase the Q matrix will make the cart stable for quite a long time. But when considering the real system, the parameter tuning will be more complex.
