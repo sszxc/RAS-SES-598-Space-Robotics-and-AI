@@ -68,7 +68,14 @@ class CartPoleLQRController(Node):
         
         # Control loop timer
         self.timer = self.create_timer(0.01, self.control_loop)
-        
+
+        # 创建状态发布器
+        self.cart_pos_pub = self.create_publisher(Float64, '/plot/cart_position', 10)
+        self.cart_vel_pub = self.create_publisher(Float64, '/plot/cart_velocity', 10)
+        self.pole_angle_pub = self.create_publisher(Float64, '/plot/pole_angle', 10)
+        self.pole_vel_pub = self.create_publisher(Float64, '/plot/pole_velocity', 10)
+        self.control_force_pub = self.create_publisher(Float64, '/plot/control_force', 10)
+
         self.get_logger().info('Cart-Pole LQR Controller initialized')
     
     def compute_lqr_gain(self):
@@ -115,7 +122,9 @@ class CartPoleLQRController(Node):
             # Log control input periodically
             if abs(force - self.last_control) > 0.1 or self.control_count % 100 == 0:
                 # self.get_logger().info('\n计算并发布控制指令')
-                self.get_logger().info(f'\nState: {self.x.T}, Control force: {force:.3f}N')
+                self.get_logger().info(f'\nCart position: {self.x.T[0][0]:.3f}, Cart velocity{self.x.T[0][1]:.3f}, ' + \
+                                       f'Pole angle: {self.x.T[0][2]:.3f}, Pole angular velocity: {self.x.T[0][3]:.3f}, ' + \
+                                       f'Control force: {force:.3f}N')
             
             # Publish control command
             msg = Float64()
@@ -124,6 +133,28 @@ class CartPoleLQRController(Node):
             
             self.last_control = force
             self.control_count += 1
+
+            # 发布数据
+            cart_pos_msg = Float64()
+            cart_pos_msg.data = float(self.x[0][0])
+            self.cart_pos_pub.publish(cart_pos_msg)
+            
+            cart_vel_msg = Float64()
+            cart_vel_msg.data = float(self.x[1][0])
+            self.cart_vel_pub.publish(cart_vel_msg)
+            
+            pole_angle_msg = Float64()
+            pole_angle_msg.data = float(self.x[2][0])
+            self.pole_angle_pub.publish(pole_angle_msg)
+            
+            pole_vel_msg = Float64()
+            pole_vel_msg.data = float(self.x[3][0])
+            self.pole_vel_pub.publish(pole_vel_msg)
+            
+            force_msg = Float64()
+            force_msg.data = force
+            self.control_force_pub.publish(force_msg)
+
             
         except Exception as e:
             self.get_logger().error(f'Control loop error: {e}')
