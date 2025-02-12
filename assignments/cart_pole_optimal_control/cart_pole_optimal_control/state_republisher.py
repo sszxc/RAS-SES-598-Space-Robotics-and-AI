@@ -6,17 +6,24 @@ from sensor_msgs.msg import JointState
 from rclpy.qos import QoSProfile, ReliabilityPolicy, HistoryPolicy, DurabilityPolicy
 
 class StateRepublisher(Node):
+    """
+    状态重发布节点
+    作用：将Gazebo的关节状态消息重新发布为标准ROS2格式
+    用途：使其他节点（如控制器）能更方便地获取关节状态信息
+    """
     def __init__(self):
         super().__init__('state_republisher')
         
         # Create QoS profiles
+        # 用于传感器数据，允许丢失但保证实时性
         sensor_qos = QoSProfile(
             reliability=ReliabilityPolicy.BEST_EFFORT,
             durability=DurabilityPolicy.VOLATILE,
             history=HistoryPolicy.KEEP_LAST,
             depth=1
         )
-        
+
+        # 用于可靠通信，确保消息送达
         reliable_qos = QoSProfile(
             reliability=ReliabilityPolicy.RELIABLE,
             durability=DurabilityPolicy.TRANSIENT_LOCAL,
@@ -49,7 +56,7 @@ class StateRepublisher(Node):
         
         # Copy joint states but ensure correct order and naming
         new_msg.name = ['cart_to_base', 'pole_joint']  # Fixed order of joints
-        new_msg.position = [0.0] * 2
+        new_msg.position = [0.0] * 2  # 这里对应两个关节
         new_msg.velocity = [0.0] * 2
         new_msg.effort = [0.0] * 2
         

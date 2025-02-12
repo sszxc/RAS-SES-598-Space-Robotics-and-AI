@@ -7,6 +7,11 @@ import numpy as np
 from rclpy.qos import QoSProfile, ReliabilityPolicy, HistoryPolicy
 
 class EarthquakeForceGenerator(Node):
+    """
+    地震力生成器节点
+    用途：模拟地震扰动，生成随机的外部作用力
+    特点：使用多个正弦波叠加来模拟真实地震的复杂波形
+    """
     def __init__(self):
         super().__init__('earthquake_force_generator')
         
@@ -31,19 +36,19 @@ class EarthquakeForceGenerator(Node):
             qos_profile
         )
         
-        # Parameters for earthquake simulation
+        # Parameters for earthquake simulation  关于力的参数
         self.declare_parameter('base_amplitude', 15.0)  # Base force amplitude in N
         self.declare_parameter('frequency_range', [0.5, 4.0])  # Frequency range in Hz
         self.declare_parameter('update_rate', 50.0)  # Update rate in Hz
         
         # Timer for force updates
         update_period = 1.0 / self.get_parameter('update_rate').value
-        self.timer = self.create_timer(update_period, self.generate_force)
+        self.timer = self.create_timer(update_period, self.generate_force)  # 定时运行这个
         
-        # Time tracking for continuous wave generation
+        # Time tracking for continuous wave generation  记下开始时间用于生成连续的波形
         self.start_time = self.get_clock().now().nanoseconds / 1e9
         
-        # Generate random frequencies for the earthquake waves
+        # Generate random frequencies for the earthquake waves  初始化5个不同的地震波（随机频率和相位）用于叠加
         freq_range = self.get_parameter('frequency_range').value
         self.frequencies = np.random.uniform(freq_range[0], freq_range[1], 5)
         self.phase_shifts = np.random.uniform(0, 2*np.pi, 5)

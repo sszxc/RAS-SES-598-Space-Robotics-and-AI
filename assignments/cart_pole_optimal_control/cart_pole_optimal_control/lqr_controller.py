@@ -18,6 +18,7 @@ class CartPoleLQRController(Node):
         self.g = 9.81  # Gravity (m/s^2)
         
         # State space matrices
+        # x' = Ax + Bu
         self.A = np.array([
             [0, 1, 0, 0],
             [0, 0, (self.m * self.g) / self.M, 0],
@@ -57,6 +58,7 @@ class CartPoleLQRController(Node):
         if self.cart_cmd_pub:
             self.get_logger().info('Force command publisher created successfully')
         
+        # 每当仿真器发布新的关节状态时，这个回调函数就触发，更新 self.x
         self.joint_state_sub = self.create_subscription(
             JointState,
             '/world/empty/model/cart_pole/joint_state',
@@ -77,6 +79,8 @@ class CartPoleLQRController(Node):
     
     def joint_state_callback(self, msg):
         """Update state estimate from joint states."""
+        # self.get_logger().info('控制器从Gazebo获取更新的关节位置')
+
         try:
             # Get indices for cart and pole joints
             cart_idx = msg.name.index('cart_to_base')  # Cart position/velocity
@@ -110,7 +114,8 @@ class CartPoleLQRController(Node):
             
             # Log control input periodically
             if abs(force - self.last_control) > 0.1 or self.control_count % 100 == 0:
-                self.get_logger().info(f'State: {self.x.T}, Control force: {force:.3f}N')
+                # self.get_logger().info('\n计算并发布控制指令')
+                self.get_logger().info(f'\nState: {self.x.T}, Control force: {force:.3f}N')
             
             # Publish control command
             msg = Float64()

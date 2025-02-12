@@ -6,18 +6,19 @@ from launch_ros.substitutions import FindPackageShare
 import os
 
 def generate_launch_description():
+    # 找到包的安装路径，定位 URDF 文件
     pkg_share = FindPackageShare('cart_pole_optimal_control').find('cart_pole_optimal_control')
     urdf_model_path = os.path.join(pkg_share, 'models', 'cart_pole', 'model.urdf')
     
     # Create and return launch description
     return LaunchDescription([
-        # Gazebo (headless mode)
+        # Gazebo (headless mode)  Gazebo 仿真器
         ExecuteProcess(
             cmd=['gz', 'sim', '-r', '-s', 'empty.sdf'],  # -s for headless mode
             output='screen'
         ),
 
-        # Spawn robot in Gazebo
+        # Spawn robot in Gazebo  生成机器人（倒立摆模型）
         Node(
             package='ros_gz_sim',
             executable='create',
@@ -29,7 +30,7 @@ def generate_launch_description():
             output='screen'
         ),
 
-        # Direct topic bridges
+        # Direct topic bridges 话题桥接（ROS 和 Gazebo 之间）
         Node(
             package='ros_gz_bridge',
             executable='parameter_bridge',
