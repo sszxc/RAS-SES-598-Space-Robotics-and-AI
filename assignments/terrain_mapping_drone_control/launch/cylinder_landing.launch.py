@@ -36,8 +36,8 @@ def generate_launch_description():
         arguments=[
             '-file', os.path.join(gz_model_path, 'cylinder', 'model.sdf'),
             '-name', 'cylinder_front',
-            '-x', '5',     # 5 meters in front of the drone
-            '-y', '0',     # centered on y-axis
+            '-x', '0',     # 5 meters in front of the drone
+            '-y', '5',     # centered on y-axis
             '-z', '0',     # at ground level
             '-R', '0',     # no roll
             '-P', '0',     # no pitch
@@ -55,8 +55,8 @@ def generate_launch_description():
         arguments=[
             '-file', os.path.join(gz_model_path, 'cylinder_short', 'model.sdf'),
             '-name', 'cylinder_back',
-            '-x', '-5',    # 5 meters behind the drone
-            '-y', '0',     # centered on y-axis
+            '-x', '0',    # 5 meters behind the drone
+            '-y', '-5',     # centered on y-axis
             '-z', '0',     # at ground level
             '-R', '0',     # no roll
             '-P', '0',     # no pitch
@@ -114,6 +114,50 @@ def generate_launch_description():
         output='screen'
     )
 
+    # Geometry Tracker Node
+    geometry_tracker_node = Node(
+        package='terrain_mapping_drone_control',
+        executable='geometry_tracker',
+        name='geometry_tracker',
+        parameters=[{
+            'use_sim_time': True,
+        }],
+        output='screen'
+    )
+
+    # ArUco Tracker Node
+    aruco_tracker_node = Node(
+        package='terrain_mapping_drone_control',
+        executable='aruco_tracker',
+        name='aruco_tracker',
+        parameters=[{
+            'use_sim_time': True,
+        }],
+        output='screen'
+    )
+
+    # Pose Visualizer Node
+    pose_visualizer_node = Node(
+        package='terrain_mapping_drone_control',
+        executable='pose_visualizer',
+        name='pose_visualizer',
+        parameters=[{
+            'use_sim_time': True,
+        }],
+        output='screen'
+    )
+
+    # Cylinder Landing Node
+    # cylinder_landing_node = Node(
+    #     package='terrain_mapping_drone_control',
+    #     executable='cylinder_landing_node',
+    #     name='cylinder_landing_node',
+    #     parameters=[{
+    #         'use_sim_time': True,
+    #     }],
+    #     output='screen'
+    # )
+
     return LaunchDescription([
         DeclareLaunchArgument(
             'use_sim_time',
@@ -121,7 +165,7 @@ def generate_launch_description():
             description='Use simulation (Gazebo) clock if true'),
         DeclareLaunchArgument(
             'px4_autopilot_path',
-            default_value=os.environ.get('HOME', '/home/' + os.environ.get('USER', 'user')) + '/PX4-Autopilot',
+            default_value=os.environ.get('HOME', '/home/' + os.environ.get('USER', 'user')) + '/Documents/PX4-Autopilot',
             description='Path to PX4-Autopilot directory'),
         px4_sitl,
         TimerAction(
@@ -135,5 +179,21 @@ def generate_launch_description():
         TimerAction(
             period=3.0,
             actions=[bridge]
-        )
+        ),
+        # # 添加功能节点，延迟4秒启动，确保仿真环境和桥接节点已经建立
+        # TimerAction(
+        #     period=4.0,
+        #     actions=[
+        #         geometry_tracker_node,
+        #     ]
+        #         # pose_visualizer_node
+        #         # aruco_tracker_node,
+        # ),
+        # # 最后启动控制节点，延迟5秒
+        # TimerAction(
+        #     period=5.0,
+        #     actions=[
+        #         cylinder_landing_node
+        #     ]
+        # )
     ]) 

@@ -7,6 +7,10 @@ import time
 from rclpy.qos import QoSProfile, QoSReliabilityPolicy, QoSHistoryPolicy, QoSDurabilityPolicy
 from geometry_msgs.msg import Point
 from std_msgs.msg import Float32MultiArray
+from transform_utils import Transform, Rotation
+from rich import print
+import numpy as np
+np.set_printoptions(precision=4, suppress=True, linewidth=100)
 
 class SimpleTestNode(Node):
     def __init__(self):
@@ -60,6 +64,7 @@ class SimpleTestNode(Node):
         
         # Create a timer to publish control commands
         self.create_timer(0.1, self.control_loop)  # 10Hz control loop
+        self.start_time = time.time()
 
     def vehicle_odometry_callback(self, msg):
         """Store vehicle position from odometry."""
@@ -141,15 +146,15 @@ class SimpleTestNode(Node):
 
     def control_loop(self):
         """Timer callback for control loop."""
-        if self.offboard_setpoint_counter == 10:
-            self.engage_offboard_mode()
-            self.arm()
+        if self.offboard_setpoint_counter == 10:  # 计数器
+            self.engage_offboard_mode()  # 切换到offboard模式，允许后面的起飞命令
+            self.arm()  # 解锁无人机
             self.get_logger().info("Vehicle armed and offboard mode enabled")
 
         self.publish_offboard_control_mode()
 
         try:
-            current_height = -self.vehicle_odometry.position[2]
+            current_height = -self.vehicle_odometry.position[2]  # 获取当前高度
         except (IndexError, AttributeError):
             current_height = 0.0
 
@@ -158,7 +163,7 @@ class SimpleTestNode(Node):
             self.publish_trajectory_setpoint(
                 x=0.0,
                 y=0.0,
-                z=-self.TARGET_HEIGHT,  # Negative because PX4 uses NED
+                z=-self.TARGET_HEIGHT,  # Negative because PX4 uses NED -> North-East-Down 坐标系
                 yaw=0.0
             )
             
@@ -168,8 +173,33 @@ class SimpleTestNode(Node):
             
             # Check if we've reached target height
             if self.is_at_target_height():
-                self.state = "LAND"
+                self.state = "SEARCH"
                 self.get_logger().info(f"Reached target height of {self.TARGET_HEIGHT}m, beginning landing")
+
+        elif self.state == "SEARCH":
+            current_pose = Transform(Rotation.from_quat(self.vehicle_odometry.q, scalar_first=True),
+                                     self.vehicle_odometry.position)
+            self.get_logger().info(f"Current rpy: {current_pose.rotation.as_euler('xyz', degrees=True)}°")
+            current_yaw = current_pose.rotation.as_euler('xyz', degrees=False)[2]
+
+            target_yaw_list = [0.0, np.pi/2, np.pi, -np.pi/2]
+            current_time = time.time() - self.start_time
+            print(f"current_time: {current_time}")
+            target_yaw = target_yaw_list[int(current_time/3) % len(target_yaw_list)]
+
+            self.get_logger().info(f"Current yaw: {current_yaw/np.pi*180:.2f}°, target yaw: {target_yaw/np.pi*180:.2f}°")
+            self.publish_trajectory_setpoint(
+                x=0.0,
+                y=0.0,
+                z=-self.TARGET_HEIGHT,
+                yaw=target_yaw
+            )
+            
+            # Search for the cylinder
+            # if _cylinder_in_view:
+            #     self.last_cylinder_yaw = current_yaw
+            #     self.last_cylinder_height = current_height
+
 
         elif self.state == "LAND":
             # Land by going to height 0
