@@ -63,7 +63,7 @@ class SimpleTestNode(Node):
         self.cylinder_info = None
         
         # Flight parameters
-        self.TARGET_HEIGHT = 7.0  # meters
+        self.TARGET_HEIGHT = 5.0  # meters
         self.POSITION_THRESHOLD = 0.1  # meters
         
         # State machine
@@ -193,7 +193,19 @@ class SimpleTestNode(Node):
             y = float(matches.group(2))
             z = float(matches.group(3))
             self.aruco_pose = x, y, z
-        self.get_logger().info(f"Aruco marker pose: {self.aruco_pose}")
+
+            current_pos = self.vehicle_odometry.position
+            aruco_offset_Fcam = self.aruco_pose[0:2]
+            cos_yaw = np.cos(self.current_yaw)
+            sin_yaw = np.sin(self.current_yaw)
+            aruco_offset_Fworld = np.array([
+                aruco_offset_Fcam[0] * sin_yaw - aruco_offset_Fcam[1] * cos_yaw,
+                aruco_offset_Fcam[0] * cos_yaw + aruco_offset_Fcam[1] * sin_yaw,
+                self.aruco_pose[2],
+            ])
+            self.aruco_guide_target = current_pos + aruco_offset_Fworld * 0.3
+
+        self.get_logger().info(f"Aruco marker pose: {self.aruco_guide_target}")
 
     def control_loop(self):
         """Timer callback for control loop."""
@@ -228,11 +240,26 @@ class SimpleTestNode(Node):
                 self.get_logger().info(f"Reached target height of {self.TARGET_HEIGHT}m, beginning searching")
 
         elif self.state == "SEARCH":
+            # directly to land - only forquick test
+            # current_pos = self.vehicle_odometry.position
+            # target_pos = np.array([5.0, 0.0, -15.0])
+            # distance_to_target = np.linalg.norm(target_pos - current_pos)
+            # self.get_logger().info(f"current_pos: {current_pos}, target_pos: {target_pos}, distance_to_target: {distance_to_target:.2f}m")
+            # if distance_to_target < 0.1:
+            #     self.get_logger().info(f"Ready to land")
+            #     self.state = "LAND"
+            # self.publish_trajectory_setpoint(
+            #     x=5.0,
+            #     y=0.0,
+            #     z=-15.0,  # Negative because PX4 uses NED -> North-East-Down 坐标系
+            #     yaw=0.0
+            # )
+            # return
             current_pose = Transform(Rotation.from_quat(self.vehicle_odometry.q, scalar_first=True),
                                      self.vehicle_odometry.position)
             # self.get_logger().info(f"Current rpy: {current_pose.rotation.as_euler('xyz', degrees=True)}°")
             self.current_yaw = current_pose.rotation.as_euler('xyz', degrees=False)[2]
-            self.target_height = self.current_height + 0.08
+            self.target_height = self.current_height + 0.15
 
             # target_yaw_list = [0.0, np.pi/2, np.pi, -np.pi/2]
             # current_time = time.time() - self.start_time
@@ -247,7 +274,7 @@ class SimpleTestNode(Node):
             if self.last_yaw < 0 and self.current_yaw > 0:
                 print(f'last_yaw: {self.last_yaw}, current_yaw: {self.current_yaw}')
                 self.search_cycle_count += 1
-                if self.search_cycle_count > 1 or True:  # TODO for testing
+                if self.search_cycle_count > 1:  # or True:  # TODO for testing
                     # passed a full circle, check if only one cylinder is in view
                     cylinders_last_seen_cycle = [info[2] for info in self.cylinder_position.values()]
                     self.get_logger().info(f"Checking if only one cylinder is in view\nlast seen cycle: {cylinders_last_seen_cycle}, current cycle: {self.search_cycle_count}")
@@ -289,7 +316,7 @@ class SimpleTestNode(Node):
                 self.state = "APPROACH"
                 self.target_x = np.cos(self.target_cylinder) * (self.cylinder_position[self.target_cylinder][0] + 0.03)
                 self.target_y = np.sin(self.target_cylinder) * (self.cylinder_position[self.target_cylinder][0] + 0.03)
-                self.target_height = self.current_height + 1.8
+                self.target_height = self.current_height + 1.5
                 print(f"target_x: {self.target_x:.2f}, target_y: {self.target_y:.2f}, target_height: {self.target_height:.2f}")
 
             # self.target_height += 0.01
@@ -320,13 +347,15 @@ class SimpleTestNode(Node):
 
         elif self.state == "LAND":
             # Land by going to height 0
-            current_pos = self.vehicle_odometry.position
-            self.publish_trajectory_setpoint(
-                x=current_pos[0] - self.aruco_pose[0],
-                y=current_pos[1] - self.aruco_pose[1],
-                z=-self.current_height,
-                yaw=0.0
-            )
+
+            if 'aruco_guide_target' in self.__dict__:
+                self.target_height = self.current_height - 0.2
+                self.publish_trajectory_setpoint(
+                    x=self.aruco_guide_target[0],
+                    y=self.aruco_guide_target[1],
+                    z=-self.target_height,
+                    yaw=0.0
+                )
             
             # Log current height every second
             if self.offboard_setpoint_counter % 10 == 0:

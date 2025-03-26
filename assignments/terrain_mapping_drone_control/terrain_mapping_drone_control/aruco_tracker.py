@@ -84,6 +84,7 @@ class ArucoTracker(Node):
 
     def detect_markers(self, image):
         """Detect ArUco markers using the appropriate OpenCV API."""
+        image = cv2.bilateralFilter(image, 9, 75, 75)
         try:
             if self.detector is not None:
                 # OpenCV 4.7+ API
