@@ -85,20 +85,22 @@ class GeometryTracker(Node):
                                   (0,0,255), 
                                   1)
             
-            # Find contours for cylinder detection
+            # Find contours for cylinder detection TODO I think it's blurred
             contours, _ = cv2.findContours(edges, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
             
             # Draw all contours in green (light)
-            cv2.drawContours(debug_image, contours, -1, (0,100,0), 1)
+            cv2.drawContours(debug_image, contours, -1, (0,100,0), 2)
             
             # Process contours to find cylinder-like shapes
             best_cylinder = None
             best_confidence = 0.0
-            
+
+            # areas = [cv2.contourArea(contour) for contour in contours]
+            # self.get_logger().info(f"areas: {areas}")
             for contour in contours:
                 # Calculate contour properties
                 area = cv2.contourArea(contour)
-                
+
                 # Filter small contours
                 if area < 1000:  # Minimum area threshold
                     continue
@@ -115,6 +117,7 @@ class GeometryTracker(Node):
                     confidence = aspect_ratio * angle_confidence * size_confidence
                     
                     # Filter for cylinder-like shapes (nearly vertical ellipses)
+                    self.get_logger().info(f"aspect_ratio: {aspect_ratio}, angle: {angle}")
                     if aspect_ratio > 0.3 and abs(angle - 90) < 30:
                         # Update best cylinder if confidence is higher
                         if confidence > best_confidence:
@@ -179,6 +182,14 @@ class GeometryTracker(Node):
                           1.0, 
                           (0,255,255), 
                           2)
+                
+                if center_depth < depth_max:
+                    # Publish center depth anyway
+                    center_msg = Point()
+                    center_msg.x = 0.0
+                    center_msg.y = 0.0
+                    center_msg.z = float(center_depth)
+                    self.cylinder_pose_pub.publish(center_msg)
             
             # Add legend
             cv2.putText(debug_image, "Red: Vertical Lines", (10, 20), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0,0,255), 1)

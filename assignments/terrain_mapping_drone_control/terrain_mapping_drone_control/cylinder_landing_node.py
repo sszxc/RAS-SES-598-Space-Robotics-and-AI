@@ -9,7 +9,9 @@ from geometry_msgs.msg import Point
 from std_msgs.msg import Float32MultiArray
 from transform_utils import Transform, Rotation
 from rich import print
+from std_msgs.msg import String
 import numpy as np
+import re
 np.set_printoptions(precision=4, suppress=True, linewidth=100)
 
 class SimpleTestNode(Node):
@@ -48,15 +50,20 @@ class SimpleTestNode(Node):
             Float32MultiArray, '/geometry/cylinder_info',
             self.cylinder_info_callback, 10)
 
+        # subscribe to aruco marker pose
+        self.aruco_pose_subscriber = self.create_subscription(
+            String, '/aruco/marker_pose',
+            self.aruco_pose_callback, 10)
+
         # Initialize variables
         self.offboard_setpoint_counter = 0
         self.vehicle_odometry = VehicleOdometry()
         self.vehicle_status = VehicleStatus()
-        self.cylinder_position = None
+        self.cylinder_position = {}
         self.cylinder_info = None
         
         # Flight parameters
-        self.TARGET_HEIGHT = 1.0  # meters
+        self.TARGET_HEIGHT = 7.0  # meters
         self.POSITION_THRESHOLD = 0.1  # meters
         
         # State machine
@@ -65,6 +72,12 @@ class SimpleTestNode(Node):
         # Create a timer to publish control commands
         self.create_timer(0.1, self.control_loop)  # 10Hz control loop
         self.start_time = time.time()
+        self.search_cycle_count = 0
+        self.last_yaw = 0.0
+        self.current_yaw = 0.0
+        self.current_height = 0.0
+        self.aruco_pose = 0, 0, 0
+
 
     def vehicle_odometry_callback(self, msg):
         """Store vehicle position from odometry."""
@@ -127,13 +140,40 @@ class SimpleTestNode(Node):
         except (IndexError, AttributeError):
             return False
 
+    def angle_is_close(self, angle1, angle2, threshold=30):
+        """Check if two angles are close to each other."""
+        # 将角度差值限制在 -pi 到 pi 之间
+        diff = abs(angle1 - angle2) % (2 * np.pi)
+        if diff > np.pi:
+            diff = 2 * np.pi - diff
+        # 如果threshold是以度为单位，需要转换为弧度
+        return diff < threshold * np.pi / 180
+
     def cylinder_pose_callback(self, msg):
         """Store cylinder position from geometry tracker."""
-        self.cylinder_position = msg
-        if self.offboard_setpoint_counter % 10 == 0:  # Log every second
-            self.get_logger().info(
-                f'Cylinder at pixel ({msg.x:.1f}, {msg.y:.1f}) depth {msg.z:.2f}m'
-            )
+        # self.cylinder_position = msg
+        # if self.offboard_setpoint_counter % 10 == 0:  # Log every second
+        #     self.get_logger().info(
+        #         f'Cylinder at pixel ({msg.x:.1f}, {msg.y:.1f}) depth {msg.z:.2f}m'
+        #     )
+        if self.state == "SEARCH" or self.state == "CLIMB":
+            # 寻找是否已经存在对应角度的数据
+            history_cylinder_yaw = [yaw for yaw in self.cylinder_position.keys()]
+            for yaw in history_cylinder_yaw:
+                if self.angle_is_close(yaw, self.current_yaw):
+                    self.cylinder_position[yaw] = [msg.z, self.current_height, self.search_cycle_count]
+                    # self.get_logger().info(f"Update cylinder {yaw*180/np.pi:.3f}°")
+                    self.print_cylinder_position()
+                    return
+            self.cylinder_position[self.current_yaw] = [msg.z, self.current_height, self.search_cycle_count]
+            self.print_cylinder_position()
+            # self.get_logger().info(f"New cylinder {self.current_yaw} at {self.current_height:.2f}m")
+
+    def print_cylinder_position(self):
+        _string = ""
+        for yaw, info in self.cylinder_position.items():
+            _string += f"C{yaw*180/np.pi:.3f}°: d {info[0]:.2f}m h {info[1]:.2f}m cycle {info[2]}. "
+        self.get_logger().info(_string)
 
     def cylinder_info_callback(self, msg):
         """Store cylinder information from geometry tracker."""
@@ -143,6 +183,17 @@ class SimpleTestNode(Node):
                 f'Cylinder size: {msg.data[0]:.1f}x{msg.data[1]:.1f} '
                 f'angle: {msg.data[2]:.1f}° confidence: {msg.data[3]:.2f}'
             )
+
+    def aruco_pose_callback(self, msg):
+        """Store aruco marker pose from aruco tracker."""
+        pattern = r'x:([\d.-]+)m, y:([\d.-]+)m, z:([\d.-]+)m'
+        matches = re.search(pattern, msg.data)
+        if matches:
+            x = float(matches.group(1))
+            y = float(matches.group(2))
+            z = float(matches.group(3))
+            self.aruco_pose = x, y, z
+        self.get_logger().info(f"Aruco marker pose: {self.aruco_pose}")
 
     def control_loop(self):
         """Timer callback for control loop."""
@@ -154,9 +205,9 @@ class SimpleTestNode(Node):
         self.publish_offboard_control_mode()
 
         try:
-            current_height = -self.vehicle_odometry.position[2]  # 获取当前高度
+            self.current_height = -self.vehicle_odometry.position[2]  # 获取当前高度
         except (IndexError, AttributeError):
-            current_height = 0.0
+            self.current_height = 0.0
 
         if self.state == "TAKEOFF":
             # Take off to target height
@@ -169,50 +220,117 @@ class SimpleTestNode(Node):
             
             # Log current height every second
             if self.offboard_setpoint_counter % 10 == 0:
-                self.get_logger().info(f"Taking off... Current height: {current_height:.2f}m")
+                self.get_logger().info(f"Taking off... Current height: {self.current_height:.2f}m")
             
             # Check if we've reached target height
             if self.is_at_target_height():
                 self.state = "SEARCH"
-                self.get_logger().info(f"Reached target height of {self.TARGET_HEIGHT}m, beginning landing")
+                self.get_logger().info(f"Reached target height of {self.TARGET_HEIGHT}m, beginning searching")
 
         elif self.state == "SEARCH":
             current_pose = Transform(Rotation.from_quat(self.vehicle_odometry.q, scalar_first=True),
                                      self.vehicle_odometry.position)
-            self.get_logger().info(f"Current rpy: {current_pose.rotation.as_euler('xyz', degrees=True)}°")
-            current_yaw = current_pose.rotation.as_euler('xyz', degrees=False)[2]
+            # self.get_logger().info(f"Current rpy: {current_pose.rotation.as_euler('xyz', degrees=True)}°")
+            self.current_yaw = current_pose.rotation.as_euler('xyz', degrees=False)[2]
+            self.target_height = self.current_height + 0.08
 
-            target_yaw_list = [0.0, np.pi/2, np.pi, -np.pi/2]
-            current_time = time.time() - self.start_time
-            print(f"current_time: {current_time}")
-            target_yaw = target_yaw_list[int(current_time/3) % len(target_yaw_list)]
+            # target_yaw_list = [0.0, np.pi/2, np.pi, -np.pi/2]
+            # current_time = time.time() - self.start_time
+            # print(f"current_time: {current_time}")
+            # target_yaw = target_yaw_list[int(current_time/3) % len(target_yaw_list)]
 
-            self.get_logger().info(f"Current yaw: {current_yaw/np.pi*180:.2f}°, target yaw: {target_yaw/np.pi*180:.2f}°")
+            # continuously rotate
+            target_yaw = self.current_yaw + 0.3
+            if target_yaw > np.pi:
+                target_yaw = target_yaw - 2*np.pi
+
+            if self.last_yaw < 0 and self.current_yaw > 0:
+                print(f'last_yaw: {self.last_yaw}, current_yaw: {self.current_yaw}')
+                self.search_cycle_count += 1
+                if self.search_cycle_count > 1 or True:  # TODO for testing
+                    # passed a full circle, check if only one cylinder is in view
+                    cylinders_last_seen_cycle = [info[2] for info in self.cylinder_position.values()]
+                    self.get_logger().info(f"Checking if only one cylinder is in view\nlast seen cycle: {cylinders_last_seen_cycle}, current cycle: {self.search_cycle_count}")
+                    if len([c for c in cylinders_last_seen_cycle if c == self.search_cycle_count-1]) == 1:
+                        index = cylinders_last_seen_cycle.index(self.search_cycle_count-1)
+                        self.get_logger().info(f"Only one cylinder is in view, go climbing")
+                        self.state = "CLIMB"
+                        self.target_cylinder = list(self.cylinder_position.keys())[index]
+            self.last_yaw = self.current_yaw
+
+            # test aroung 0°
+            # target_yaw = self.current_yaw + 0.01
+            # if target_yaw < - 0.3 or target_yaw > + 0.3:
+            #     target_yaw = - 0.3
+
+            # self.get_logger().info(f"Current yaw: {self.current_yaw/np.pi*180:.2f}°, target yaw: {target_yaw/np.pi*180:.2f}°")
+            # self.get_logger().info(f"Current yaw: {self.current_yaw/np.pi*180:.2f}°, current height: {self.current_height:.2f}m")
             self.publish_trajectory_setpoint(
                 x=0.0,
                 y=0.0,
-                z=-self.TARGET_HEIGHT,
+                z=-self.target_height,
                 yaw=target_yaw
             )
             
             # Search for the cylinder
             # if _cylinder_in_view:
-            #     self.last_cylinder_yaw = current_yaw
+            #     self.last_cylinder_yaw = self.current_yaw
             #     self.last_cylinder_height = current_height
 
+        elif self.state == "CLIMB":
+            self.get_logger().info(f"Climbing to {self.target_cylinder}°")
+            target_yaw = self.target_cylinder + np.random.uniform(-0.2, 0.2)
+            self.target_height = self.current_height + 0.3
 
-        elif self.state == "LAND":
-            # Land by going to height 0
+            # check if the target is missing
+            if abs(self.cylinder_position[self.target_cylinder][1] - self.current_height) > 1.0:
+                self.get_logger().info(f"Target height: {self.cylinder_position[self.target_cylinder][1]:.2f}m, current height: {self.current_height:.2f}m")
+                self.get_logger().info(f"Target {self.target_cylinder}° is missing, go approaching")
+                self.state = "APPROACH"
+                self.target_x = np.cos(self.target_cylinder) * (self.cylinder_position[self.target_cylinder][0] + 0.03)
+                self.target_y = np.sin(self.target_cylinder) * (self.cylinder_position[self.target_cylinder][0] + 0.03)
+                self.target_height = self.current_height + 1.8
+                print(f"target_x: {self.target_x:.2f}, target_y: {self.target_y:.2f}, target_height: {self.target_height:.2f}")
+
+            # self.target_height += 0.01
             self.publish_trajectory_setpoint(
                 x=0.0,
                 y=0.0,
-                z=0.0,  # Land at ground level
+                z=-self.target_height,
+                yaw=target_yaw
+            )
+
+        elif self.state == "APPROACH":
+            current_pose = Transform(Rotation.from_quat(self.vehicle_odometry.q, scalar_first=True),
+                                     self.vehicle_odometry.position)
+            target_pos = np.array([self.target_x, self.target_y, -self.target_height])
+            distance_to_target = np.linalg.norm(target_pos - current_pose.translation)
+            # self.get_logger().info(f"target_pos: {target_pos}, current_pos: {current_pose.translation}")
+            # self.get_logger().info(f"Approaching {self.target_cylinder}°, distance to target: {distance_to_target:.2f}m")
+            if distance_to_target < 0.1:
+                self.get_logger().info(f"Ready to land")
+                self.state = "LAND"
+
+            self.publish_trajectory_setpoint(
+                x=self.target_x,
+                y=self.target_y,
+                z=-self.target_height,
+                yaw=self.target_cylinder
+            )
+
+        elif self.state == "LAND":
+            # Land by going to height 0
+            current_pos = self.vehicle_odometry.position
+            self.publish_trajectory_setpoint(
+                x=current_pos[0] - self.aruco_pose[0],
+                y=current_pos[1] - self.aruco_pose[1],
+                z=-self.current_height,
                 yaw=0.0
             )
             
             # Log current height every second
             if self.offboard_setpoint_counter % 10 == 0:
-                self.get_logger().info(f"Landing... Current height: {current_height:.2f}m")
+                self.get_logger().info(f"Landing... Current height: {self.current_yaw:.2f}m")
 
         self.offboard_setpoint_counter += 1
 

@@ -87,10 +87,10 @@ class PoseVisualizer(Node):
         marker.scale.x = 0.5  # shaft diameter
         marker.scale.y = 0.1  # head diameter
         marker.scale.z = 0.1  # head length
-        marker.color.r = color[0]
-        marker.color.g = color[1]
-        marker.color.b = color[2]
-        marker.color.a = color[3]
+        marker.color.r = float(color[0])
+        marker.color.g = float(color[1])
+        marker.color.b = float(color[2])
+        marker.color.a = float(color[3])
         return marker
 
     def update_markers(self, position, orientation):
