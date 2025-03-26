@@ -127,3 +127,10 @@ Use RTAB-Map or a SLAM ecosystem of your choice to map both rocks, and export th
 
 This assignment is licensed under the Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International License (CC BY-NC-SA 4.0). 
 For more details: https://creativecommons.org/licenses/by-nc-sa/4.0/ 
+
+
+# Assignment Submission
+
+Xuechao Zhang, Mar. 25th
+
+[![screenshot](resource/full_process_screenshot.jpg)](resource/Full%20Process%20Demonstration.mp4 "Full Process Demonstration")
