@@ -166,11 +166,13 @@ python3 cylinder_landing_node.py
 
 ### State Machine
 
+![State Machine](resource/state%20figure.jpg)
+
 The autonomous landing task is divided into the following sequential state machine:
 
 1. TAKEOFF
-   - Execute self.engage_offboard_mode() to switch to offboard mode, enabling takeoff commands
-   - Execute self.arm() to unlock the drone
+   - Execute `self.engage_offboard_mode()` to switch to offboard mode, enabling takeoff commands
+   - Execute `self.arm()` to unlock the drone
    - Take off from origin to 5m altitude, completing initialization steps
 
 2. SEARCH
