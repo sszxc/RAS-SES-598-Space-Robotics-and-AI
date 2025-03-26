@@ -134,3 +134,74 @@ For more details: https://creativecommons.org/licenses/by-nc-sa/4.0/
 Xuechao Zhang, Mar. 25th
 
 [![screenshot](resource/full_process_screenshot.jpg)](resource/Full%20Process%20Demonstration.mp4 "Full Process Demonstration")
+
+## Start Script
+
+For developing and debugging purposes, nodes are started separately.
+
+```bash
+# Start the Micro XRCE-DDS Agent
+MicroXRCEAgent udp4 -p 8888
+
+# Start QGroundControl
+./QGroundControl.AppImage
+
+# Start the simulation
+ros2 launch terrain_mapping_drone_control cylinder_landing.launch.py
+
+# Start the geometry tracker
+python3 geometry_tracker.py
+ros2 run image_view image_view image:=/geometry/debug_image
+
+# Start the aruco tracker
+python3 aruco_tracker.py
+ros2 run image_view image_view image:=/aruco/debug_image
+
+# Start the cylinder landing node
+python3 cylinder_landing_node.py
+
+```
+
+## Development Notes
+
+### State Machine
+
+The autonomous landing task is divided into the following sequential state machine:
+
+1. TAKEOFF
+   - Execute self.engage_offboard_mode() to switch to offboard mode, enabling takeoff commands
+   - Execute self.arm() to unlock the drone
+   - Take off from origin to 5m altitude, completing initialization steps
+
+2. SEARCH
+   - Slowly increase altitude while rotating at a fixed angular velocity
+   - Use Geometry Tracker node to search for potential cylinders
+   - Store detected cylinders in a dictionary: `self.cylinder_position[yaw] = [distance, current_height, last_seen_cycle_count]`
+   - Specifically, establish a polar coordinate system with the drone's current position as origin, using yaw as the key() for each cylinder
+   - When detecting new cylinders in the image, use yaw angle proximity to determine whether to update existing cylinders or add new ones
+   - The exit condition: when only one cylinder is visible during a complete rotation, the drone assumes it has found the target highest cylinder
+
+3. CLIMB
+   - Control the drone to face the target yaw angle
+   - Gradually increase altitude while adding zero-mean random noise to yaw to prevent detection failures
+   - Calculate the cylinder's final height when its top is detected, then proceed to the next step
+
+4. APPROACH
+   - Navigate the drone 1.5m directly above the target cylinder in preparation for landing
+
+5. LAND
+   - Utilize the drone's downward-facing camera for Aruco Tag tracking and positioning
+   - Activate the Aruco Tracker node's callback function, transform tag position from camera coordinates to world coordinates
+   - Implement closed-loop landing using tag spatial positioning
+
+### Challenges
+
+This was my first experience with drone systems and their environment (QGroundControl and PX4 SITL), requiring significant time to configure the environment and debug inter-module communications.
+
+Since drone yaw angles range from -π to π, boundary handling was necessary for proximity detection and angle calculations.
+
+PX4 uses the NED (North-East-Down) coordinate system, which is unusual and required special attention.
+
+The default Aruco Tracker parameters weren't robust, frequently missing detections. This was resolved by adding `image = cv2.bilateralFilter(image, 9, 75, 75)` as a preprocessing step to enhance detection reliability.
+
+Due to time constraints, many parameters remain to be optimized.
