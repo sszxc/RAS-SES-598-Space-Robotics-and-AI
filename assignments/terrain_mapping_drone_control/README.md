@@ -133,7 +133,9 @@ For more details: https://creativecommons.org/licenses/by-nc-sa/4.0/
 
 Xuechao Zhang, Mar. 25th
 
-[![screenshot](resource/full_process_screenshot.jpg)](resource/Full%20Process%20Demonstration.mp4 "Full Process Demonstration")
+<!-- [![screenshot](resource/full_process_screenshot.jpg)](resource/Full%20Process%20Demonstration.mp4 "Full Process Demonstration") -->
+
+https://github.com/user-attachments/assets/55db56ef-00a0-4b15-8ca8-6aa5c5d2e106
 
 ## Start Script
 
