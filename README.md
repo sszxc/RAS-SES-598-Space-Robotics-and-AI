@@ -5,11 +5,11 @@
 ## Selected Results
 
 ### first_order_boustrophedon_navigator
-![screenshot_kd_tuning](assignments/first_order_boustrophedon_navigator/resource/screenshot_different_kd.png)
+https://github.com/user-attachments/assets/3b2798d5-2c15-4c07-84ac-f6e73545a863
 
 ### cart_pole_optimal_control
 
-![screenshot_cart_pole_optimal_control](assignments/cart_pole_optimal_control/resource/Screenshot.png)
+https://github.com/user-attachments/assets/e8788275-89f2-4158-851f-4a7971234a78
 
 ### terrain_mapping_drone_control
 
