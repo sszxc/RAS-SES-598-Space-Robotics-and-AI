@@ -13,4 +13,4 @@ https://github.com/user-attachments/assets/e8788275-89f2-4158-851f-4a7971234a78
 
 ### terrain_mapping_drone_control
 
-https://github.com/user-attachments/assets/55db56ef-00a0-4b15-8ca8-6aa5c5d2e106
+https://github.com/user-attachments/assets/a3b561ed-24af-4f0e-8e44-665c541266e7
