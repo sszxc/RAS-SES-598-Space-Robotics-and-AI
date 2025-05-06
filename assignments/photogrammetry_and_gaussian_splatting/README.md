@@ -75,6 +75,10 @@ Numerically, the final PSNR is 14.068, SSIM is 0.175, and LPIPS is 0.729. PSNR i
 
 https://github.com/user-attachments/assets/66a71c87-0af8-48b5-a0f6-c0a31bcd969c
 
+Editing with [SuperSplat editor](https://playcanvas.com/supersplat/editor) and removing the surrounding invalid Gaussians produced the following result.
+
+https://github.com/user-attachments/assets/11a2f0d0-ae96-44de-bd9c-521172446c59
+
 ## Novel View Synthesis
 
 Manually selected some new viewpoints, performed Novel View Synthesis, and added them to the original dataset.
