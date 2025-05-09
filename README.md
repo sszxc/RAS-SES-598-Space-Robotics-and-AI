@@ -14,3 +14,9 @@ https://github.com/user-attachments/assets/e8788275-89f2-4158-851f-4a7971234a78
 ### terrain_mapping_drone_control
 
 https://github.com/user-attachments/assets/a3b561ed-24af-4f0e-8e44-665c541266e7
+
+### photogrammetry_and_gaussian_splatting
+
+![agisoft_3](assignments/photogrammetry_and_gaussian_splatting/media/agisoft_3.jpg)
+
+https://github.com/user-attachments/assets/11a2f0d0-ae96-44de-bd9c-521172446c59
